@@ -55,15 +55,12 @@ query(Query) ->
 query(Conn=#conn{}, Query) ->
     pgo_handler:extended_query(Conn, Query, [], [{return_rows_as_maps, false}]);
 query(Pool, Query) when is_atom(Pool) ->
-    SpanCtx = oc_trace:start_span(<<"pgo:query/2">>, ocp:current_span_ctx(),
-                                  #{attributes => #{<<"query">> => Query}}),
     case checkout(Pool) of
         {ok, Ref, Conn} ->
             try
                 pgo_handler:extended_query(Conn, Query, [], [{return_rows_as_maps, false}])
             after
-                checkin(Ref, Conn),
-                oc_trace:finish_span(SpanCtx)
+                checkin(Ref, Conn)
             end;
         {error, _}=E ->
             E
